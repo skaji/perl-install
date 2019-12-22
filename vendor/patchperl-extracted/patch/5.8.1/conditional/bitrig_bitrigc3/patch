@@ -1,0 +1,13 @@
+diff --git a/Configure b/Configure
+index 19bed50..e4e4075 100755
+--- Configure	Thu Aug 22 23:20:14 2013
++++ Configure	Thu Aug 22 23:20:35 2013
+@@ -7855,7 +7855,7 @@
+ 	solaris)
+ 		xxx="-R $shrpdir"
+ 		;;
+-	freebsd|netbsd|openbsd)
++	freebsd|netbsd|openbsd|bitrig)
+ 		xxx="-Wl,-R$shrpdir"
+ 		;;
+ 	bsdos|linux|irix*|dec_osf)

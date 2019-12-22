@@ -1,0 +1,13 @@
+diff --git a/META.json b/META.json
+index 64caea7..200e324 100644
+--- META.json
++++ META.json
+@@ -118,7 +118,7 @@
+          "TestInit.pm"
+       ]
+    },
+-   "release_status" : "testing",
++   "release_status" : "stable",
+    "resources" : {
+       "bugtracker" : {
+          "web" : "http://rt.perl.org/perlbug/"

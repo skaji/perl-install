@@ -1,0 +1,1 @@
+[ $(uname) = Linux ] && [ ! -f /usr/include/asm/page.h ]

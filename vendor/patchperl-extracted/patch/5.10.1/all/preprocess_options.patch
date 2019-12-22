@@ -1,0 +1,13 @@
+diff --git a/perl.c b/perl.c
+index 82e5538..b9e02fe 100644
+--- perl.c
++++ perl.c
+@@ -3758,7 +3758,7 @@ S_open_script(pTHX_ const char *scriptname, bool dosearch, SV *sv,
+ #       ifdef VMS
+             cpp_discard_flag = "";
+ #       else
+-            cpp_discard_flag = "-C";
++            cpp_discard_flag = "-C -ffreestanding";
+ #       endif
+ 
+ #       ifdef OS2

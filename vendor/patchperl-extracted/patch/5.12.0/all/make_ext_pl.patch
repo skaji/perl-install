@@ -1,0 +1,13 @@
+--- make_ext.pl
++++ make_ext.pl
+@@ -377,6 +377,10 @@ WriteMakefile(
+ EOM
+ 	    close $fh or die "Can't close Makefile.PL: $!";
+ 	}
++  eval {
++    my $ftime = time - 4;
++    utime $ftime, $ftime, 'Makefile.PL';
++  };
+ 	print "\nRunning Makefile.PL in $ext_dir\n";
+ 
+ 	# Presumably this can be simplified

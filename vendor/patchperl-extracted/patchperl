@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+DIR="$(dirname $0)"
+
+PERL_VERSION="$1"
+
+if [ -z "$PERL_VERSION" ] || [ "$PERL_VERSION" = "-h" ] || [ "$PERL_VERSION" = "--help" ]; then
+  echo "Usage: patchperl PERL_VERSION" >&2
+  exit 1
+fi
+
+if [ ! -f patchlevel.h ]; then
+  echo "The current directory is not perl source code" >&2
+  exit 1
+fi
+
+if [ ! -d "$DIR/patch/$PERL_VERSION" ]; then
+  echo "---> There are no patches for $PERL_VERSION"
+  exit 0
+fi
+
+if grep -q patchperl-extracted patchlevel.h; then
+  echo "Already patched by patchperl-extracted" >&2
+  exit 1
+fi
+
+if type gpatch >/dev/null 2>&1; then
+  PATCH_CMD=gpatch
+elif type patch >/dev/null 2>&1; then
+  PATCH_CMD=patch
+else
+  echo "Need 'patch' command" >&2
+  exit 1
+fi
+
+export PATCH_GET=0
+
+chmod -R u+w .
+
+for f in "$DIR"/patch/$PERL_VERSION/all/*.patch; do
+  if [ -z $PATCHPERL_QUIET ]; then
+    echo "---> $PATCH_CMD -f -s -p0 < ${f##*/}" >&2
+  fi
+  if ! $PATCH_CMD -f -s -p0 < "$f"; then
+    exit 1
+  fi
+done
+
+if [ -d "$DIR"/patch/$PERL_VERSION/conditional ]; then
+  for d in "$DIR"/patch/$PERL_VERSION/conditional/*; do
+    if sh "$d"/condition; then
+      if [ -z $PATCHPERL_QUIET ]; then
+        echo "---> $PATCH_CMD -f -s -p0 < ${d##*/}/patch" >&2
+      fi
+      if ! $PATCH_CMD -f -s -p0 < "$d"/patch; then
+        exit 1
+      fi
+    fi
+  done
+fi
+
+for f in "$DIR"/hints/*; do
+  if [ -z $PATCHPERL_QUIET ]; then
+    echo "---> cp -f hints/${f##*/} hints/" >&2
+  fi
+  cp -f "$f" hints/
+done

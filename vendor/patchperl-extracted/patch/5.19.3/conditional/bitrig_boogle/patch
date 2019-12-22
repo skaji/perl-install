@@ -1,0 +1,14 @@
+diff --git a/Configure b/Configure
+index 19bed50..e4e4075 100755
+--- Configure
++++ Configure
+@@ -3312,6 +3312,9 @@ EOM
+ 			;;
+ 		next*) osname=next ;;
+ 		nonstop-ux) osname=nonstopux ;;
++		bitrig) osname=bitrig
++			osvers="$3"
++			;;
+ 		openbsd) osname=openbsd
+                 	osvers="$3"
+                 	;;

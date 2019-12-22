@@ -1,0 +1,13 @@
+diff --git a/Configure b/Configure
+index 19bed50..e4e4075 100755
+--- Configure
++++ Configure
+@@ -8328,7 +8331,7 @@ if "$useshrplib"; then
+ 	solaris)
+ 		xxx="-R $shrpdir"
+ 		;;
+-	freebsd|netbsd|openbsd|interix|dragonfly)
++	freebsd|netbsd|openbsd|interix|dragonfly|bitrig)
+ 		xxx="-Wl,-R$shrpdir"
+ 		;;
+ 	bsdos|linux|irix*|dec_osf|gnu*)

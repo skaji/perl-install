@@ -1,0 +1,40 @@
+--- makedepend.SH.org	2003-06-05 19:11:10.000000000 +0100
++++ makedepend.SH	2010-09-01 10:24:39.000000000 +0100
+@@ -83,7 +83,6 @@
+     # to be out of date.  I don't know if OS/2 has touch, so do this:
+     case "$osname" in
+     os2) ;;
+-    netbsd) ;;
+     *) $touch $firstmakefile ;;
+     esac
+ fi
+@@ -128,7 +127,7 @@
+     *.y) filebase=`basename $file .y` ;;
+     esac
+     case "$file" in
+-    */*) finc="-I`echo $file | sed 's#/[^/]*$##`" ;;
++    */*) finc="-I`echo $file | sed 's#/[^/]*$##'`" ;;
+     *)   finc= ;;
+     esac
+     $echo "Finding dependencies for $filebase$_o."
+@@ -167,7 +166,9 @@
+             -e '/^#.*<builtin>/d' \
+             -e '/^#.*<built-in>/d' \
+             -e '/^#.*<command line>/d' \
++            -e '/^#.*<command-line>/d' \
+ 	    -e '/^#.*"-"/d' \
++	    -e '/^#.*"\/.*\/"/d' \
+ 	    -e '/: file path prefix .* never used$/d' \
+ 	    -e 's#\.[0-9][0-9]*\.c#'"$file.c#" \
+ 	    -e 's/^[	 ]*#[	 ]*line/#/' \
+@@ -209,6 +210,10 @@
+     $echo "Updating $mf..."
+     $echo "# If this runs make out of memory, delete /usr/include lines." \
+ 	>> $mf.new
++    if [ "$osname" = vos ]; then
++        $sed 's|.incl.c|.h|' .deptmp >.deptmp.vos
++        mv -f .deptmp.vos .deptmp
++    fi
+     $sed 's|^\(.*\$(OBJ_EXT):\) *\(.*/.*\.c\) *$|\1 \2; '"$defrule \2|" .deptmp \
+        >>$mf.new
+ else

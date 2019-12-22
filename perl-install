@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+
+# Provide plenv completions
+
+usage() {
+  echo "Usage: perl-install [options] perl_version prefix
+
+Options:
+  -A, -D, -U       set perl configure options
+  -l, --list       list stable perl versions, and exit
+  -L, --list-all   list all perl versions, and exit
+  -j, --jobs       set make --jobs option
+  -h, --help       show this help
+      --version    show perl-install's version
+      --noman      do not generate man pages, i.e, set -Dman1dir=none and -Dman3dir=none
+      --nopatch    do not apply Devel::PatchPerl
+      --test       run test
+      --work-dir   set work directory
+
+Examples:
+  $ perl-install -l
+  $ perl-install 5.30.1 ~/perl
+  $ perl-install 5.30.1 ~/perl-shrplib -Duseithreads -Duseshrplib
+"
+}
+
+plenv_usage() {
+  echo "Usage: plenv install [options] perl_version
+
+Options:
+  -A, -D, -U       set perl configure options
+  -l, --list       list stable perl versions, and exit
+  -L, --list-all   list all perl versions, and exit
+  -j, --jobs       set make --jobs option
+  -h, --help       show this help
+      --version    show perl-install's version
+      --noman      do not generate man pages, i.e, set -Dman1dir=none and -Dman3dir=none
+      --nopatch    do not apply Devel::PatchPerl
+      --test       run test
+      --as         set installation name
+
+Examples:
+  $ plenv install -l
+  $ plenv install 5.30.1
+  $ plenv install 5.30.1 --as 5.30-shrplib -Duseithreads -Duseshrplib
+"
+}
+
+info() {
+  echo "---> $1" >&2
+}
+
+die() {
+  echo "$1" >&2
+  exit 1
+}
+
+has_curl() {
+  if [[ -z $HAS_CURL ]]; then
+    if curl --version >/dev/null 2>&1; then
+      HAS_CURL=1
+    else
+      HAS_CURL=0
+    fi
+  fi
+  [[ $HAS_CURL = 1 ]]
+}
+
+has_wget() {
+  if [[ -z $HAS_WGET ]]; then
+    if wget --version >/dev/null 2>&1; then
+      HAS_WGET=1
+    else
+      HAS_WGET=0
+    fi
+  fi
+  [[ $HAS_WGET = 1 ]]
+}
+
+list_perl_releases() {
+  local url=https://raw.githubusercontent.com/skaji/perl-releases/master/perl-releases.v1.csv
+  if has_curl; then
+    curl -fsSL $url
+  elif has_wget 2>&1; then
+    wget -q $url
+  else
+    die "curl or wget commmand is required"
+  fi
+}
+
+download_url() {
+  local perl_version=$1
+  local perl_release_line=$(list_perl_releases | grep ,$perl_version,)
+  if [[ -n $perl_release_line ]]; then
+    echo "$perl_release_line" | cut -d, -f4
+  fi
+}
+
+run_command() {
+  local log_file="$1"
+  shift 1
+  local comment="---> $@"
+  echo "$comment" >&2
+  echo "$comment" >>$log_file
+  if ! "$@" >>$log_file 2>&1; then
+    die "Failed, see $log_file for details"
+  fi
+}
+
+# cleanup variables first
+# perl -nle 'print "$1=" if !/^#/ && /([A-Z0-9_]+)=/' perl-install | grep -v PLENV_ROOT | sort  | uniq
+AS=
+BUILD_DIR=
+CACHE_DIR=
+CONFIGURE_OPTIONS=()
+DOWNLOAD_URL=
+HAS_CURL=
+HAS_WGET=
+IS_PLENV=
+JOBS=
+LOCAL_FILE=
+LOG_FILE=
+MAKE_CMD=()
+NO_CHECK=
+NO_PATCH=
+OUR_DIR=
+PATCHPERL_QUIET=
+PATCHPERL_VERSION=
+PERL_DIRNAME=
+PERL_VERSION=
+PREFIX=
+RET=
+RUN_TEST=
+TAR_COMMAND=
+WORK_DIR=
+
+OUR_DIR=$(dirname "$0")
+if [[ ! -f $OUR_DIR/README.md ]]; then
+  OUR_DIR=$OUR_DIR/..
+fi
+if [[ ! $OUR_DIR =~ ^/ ]]; then
+  OUR_DIR=$(pwd)/$OUR_DIR
+fi
+
+if [[ $0 =~ plenv-install$ ]]; then
+  IS_PLENV=1
+  PLENV_ROOT="${PLENV_ROOT:-$HOME/.plenv}"
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h | --help)
+      if [[ -z $IS_PLENV ]]; then
+        usage
+      else
+        plenv_usage
+      fi
+      exit 1
+      ;;
+    --version)
+      if [[ -d $OUR_DIR/.git ]] && git --version >/dev/null 2>&1; then
+        echo "$( cd $OUR_DIR; git log -1 --date=short --format='%h (%ad)')"
+      else
+        echo unknown
+      fi
+      exit 1
+      ;;
+    -l | --list | --complete)
+      list_perl_releases | grep ,stable, | cut -d, -f3
+      exit
+      ;;
+    -L | --list-all)
+      list_perl_releases | cut -d, -f3
+      exit
+      ;;
+    --noman | --no-man)
+      CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "-Dman1dir=none" "-Dman3dir=none")
+      shift 1
+      ;;
+    --nopatch | --no-patch)
+      NO_PATCH=1
+      shift 1
+      ;;
+    --test)
+      RUN_TEST=1
+      shift 1
+      ;;
+    --no-check)
+      NO_CHECK=1
+      shift 1
+      ;;
+    -A | -D | -U | -A* | -D* | -U*)
+      if [[ $1 = -A ]] || [[ $1 = -D ]] || [[ $1 = -U ]]; then
+        CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "$1" "$2")
+        shift 2
+      else
+        CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "$1")
+        shift 1
+      fi
+      ;;
+    --work-dir | --work-dir=*)
+      if [[ -n $IS_PLENV ]]; then
+        die "Unknown option $1"
+      fi
+      if [[ $1 =~ ^--work-dir= ]]; then
+        WORK_DIR="${1##--work-dir=}"
+        shift 1
+      else
+        if [[ -z $2 ]] || [[ $2 =~ ^- ]]; then
+          die "$1 option requires an argument"
+        fi
+        WORK_DIR="$2"
+        shift 2
+      fi
+      ;;
+    -j | --jobs | -j=* | --jobs=*)
+      if [[ $1 =~ ^-j= ]]; then
+        JOBS="${1##-j=}"
+        shift 1
+      elif [[ $1 =~ ^--jobs= ]]; then
+        JOBS="${1##--jobs=}"
+        shift 1
+      else
+        if [[ -z $2 ]] || [[ $2 =~ ^- ]]; then
+          die "$1 option requires an argument"
+        fi
+        JOBS="$2"
+        shift 2
+      fi
+      ;;
+    --as | --as=*)
+      if [[ -z $IS_PLENV ]]; then
+        die "Unknown option $1"
+      fi
+      if [[ $1 =~ ^--as= ]]; then
+        AS="${1##--as=}"
+        shift 1
+      else
+        if [[ -z $2 ]] || [[ $2 =~ ^- ]]; then
+          die "$1 option requires an argument"
+        fi
+        AS="$2"
+        shift 2
+      fi
+      ;;
+    -*)
+      die "Unknown option $1"
+      ;;
+    *)
+      if [[ -z $PERL_VERSION ]]; then
+        PERL_VERSION="$1"
+        shift 1
+      elif [[ -z $PREFIX ]]; then
+        PREFIX="$1"
+        shift 1
+      else
+        die "Unknown argument $1"
+      fi
+      ;;
+  esac
+done
+
+if [[ -n $IS_PLENV ]]; then
+  if [[ -z $PERL_VERSION ]]; then
+    die "perl_version argument is required"
+  fi
+  mkdir -p "$PLENV_ROOT/versions"
+  if [[ -n $AS ]]; then
+    PREFIX="$PLENV_ROOT/versions/$AS"
+  else
+    PREFIX="$PLENV_ROOT/versions/$PERL_VERSION"
+  fi
+  CACHE_DIR="$PLENV_ROOT/cache"
+  BUILD_DIR="$PLENV_ROOT/build/$(date +%s).$$"
+fi
+
+if [[ -z $PERL_VERSION ]] || [[ -z $PREFIX ]]; then
+  die "perl_version and prefix arguments are required"
+fi
+
+if [[ -e $PREFIX ]] && [[ -n $(ls -A $PREFIX 2>/dev/null) ]]; then
+  die "Already exists $PREFIX"
+fi
+
+if [[ ! $PREFIX =~ ^/ ]]; then
+  PREFIX=$(pwd)/$PREFIX
+fi
+CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "-Dprefix=$PREFIX" "-Dscriptdir=$PREFIX/bin")
+
+if [[ -z $IS_PLENV ]]; then
+  if [[ -z $WORK_DIR ]]; then
+    WORK_DIR=${TMPDIR:-/tmp}
+    WORK_DIR=${WORK_DIR%/}/perl-install-$(date +%s).$$
+    info "Using work directory $WORK_DIR"
+  fi
+  CACHE_DIR=$WORK_DIR
+  BUILD_DIR=$WORK_DIR
+fi
+
+if [[ ! -d $BUILD_DIR ]]; then
+  mkdir -p $BUILD_DIR
+fi
+if [[ ! -d $CACHE_DIR ]]; then
+  mkdir -p $CACHE_DIR
+fi
+
+if [[ ! $BUILD_DIR =~ ^/ ]]; then
+  BUILD_DIR=$(pwd)/$BUILD_DIR
+fi
+if [[ ! $CACHE_DIR =~ ^/ ]]; then
+  CACHE_DIR=$(pwd)/$CACHE_DIR
+fi
+
+DOWNLOAD_URL=$(download_url $PERL_VERSION)
+if [[ -z $DOWNLOAD_URL ]]; then
+  die "Couldn't find download url for perl $PERL_VERSION"
+fi
+
+LOCAL_FILE="$CACHE_DIR"/${DOWNLOAD_URL##*/}
+if [[ -e $LOCAL_FILE ]]; then
+  info "Using cache $LOCAL_FILE"
+else
+  info "Downloading $DOWNLOAD_URL"
+  if has_curl; then
+    curl -fsSL -o $LOCAL_FILE.$$ $DOWNLOAD_URL
+    RET=$?
+  elif has_wget; then
+    wget -q -O $LOCAL_FILE.$$ $DOWNLOAD_URL
+    RET=$?
+  else
+    die "curl or wget command is required"
+  fi
+  if [[ $RET -ne 0 ]]; then
+    rm -f $LOCAL_FILE.$$
+    exit 1
+  fi
+  mv $LOCAL_FILE.$$ $LOCAL_FILE
+fi
+
+if gtar --version >/dev/null 2>&1; then
+  TAR_COMMAND=gtar
+elif tar --version >/dev/null 2>&1; then
+  TAR_COMMAND=tar
+else
+  die "tar command is required"
+fi
+
+info "Unpacking $LOCAL_FILE"
+if ! $TAR_COMMAND xf $LOCAL_FILE -C $BUILD_DIR; then
+  exit 1
+fi
+
+PERL_DIRNAME=${DOWNLOAD_URL##*/} # basename
+PERL_DIRNAME=${PERL_DIRNAME%.*}  # remove .gz
+PERL_DIRNAME=${PERL_DIRNAME%.*}  # remove .tar
+cd "$BUILD_DIR/$PERL_DIRNAME"
+
+if [[ -z $NO_PATCH ]]; then
+  PATCHPERL_VERSION=$(cat $OUR_DIR/vendor/patchperl-extracted/version)
+  info "Applying $PATCHPERL_VERSION"
+  if ! PATCHPERL_QUIET=1 $OUR_DIR/vendor/patchperl-extracted/patchperl $PERL_VERSION; then
+    exit 1
+  fi
+fi
+
+LOG_FILE="$BUILD_DIR/build.log"
+info "Building perl $PERL_VERSION"
+info "See $LOG_FILE for progress"
+run_command "$LOG_FILE" ./Configure -des "${CONFIGURE_OPTIONS[@]}"
+
+MAKE_CMD=("make")
+if [[ -n $JOBS ]]; then
+  MAKE_CMD=("${MAKE_CMD[@]}" "--jobs=$JOBS")
+fi
+run_command "$LOG_FILE" "${MAKE_CMD[@]}"
+
+if [[ -n $RUN_TEST ]]; then
+  MAKE_CMD=("make")
+  if [[ -n $JOBS ]]; then
+    MAKE_CMD=("${MAKE_CMD[@]}" "--jobs=$JOBS")
+  fi
+  MAKE_CMD=("${MAKE_CMD[@]}" "test_harness")
+  run_command "$LOG_FILE" "${MAKE_CMD[@]}"
+fi
+
+run_command "$LOG_FILE" make install
+
+info "Successfully installed perl $PERL_VERSION"

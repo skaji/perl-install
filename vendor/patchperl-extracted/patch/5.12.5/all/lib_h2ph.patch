@@ -1,0 +1,11 @@
+--- lib/h2ph.t
++++ lib/h2ph.t
+@@ -41,7 +41,7 @@ $result = runperl( progfile => 'lib/h2ph.pht',
+                    stderr => 1 );
+ like( $result, qr/syntax OK$/, "output compiles");
+ 
+-$result = runperl( switches => ["-w"], 
++$result = runperl( switches => ['-I.',"-w"], 
+                    prog => '$SIG{__WARN__} = sub { die $_[0] }; require q(lib/h2ph.pht);');
+ is( $result, '', "output free of warnings" );
+ 
