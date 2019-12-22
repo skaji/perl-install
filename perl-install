@@ -82,7 +82,7 @@ list_perl_releases() {
   if has_curl; then
     curl -fsSL $url
   elif has_wget 2>&1; then
-    wget -q $url
+    wget -q -O - $url
   else
     die "curl or wget commmand is required"
   fi
