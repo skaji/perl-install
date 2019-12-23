@@ -90,8 +90,16 @@ list_perl_releases() {
 
 download_url() {
   local perl_version=$1
+  local prefer_xz="$2"
   local perl_release_line=$(list_perl_releases | grep ,$perl_version,)
   if [[ -n $perl_release_line ]]; then
+    if [[ -n $prefer_xz ]]; then
+      local xz_url=$(echo "$perl_release_line" | cut -d, -f5)
+      if [[ $xz_url != NA ]]; then
+        echo $xz_url
+        return
+      fi
+    fi
     echo "$perl_release_line" | cut -d, -f4
   fi
 }
@@ -116,6 +124,7 @@ CONFIGURE_OPTIONS=()
 DOWNLOAD_URL=
 HAS_CURL=
 HAS_WGET=
+HAS_XZ=
 IS_PLENV=
 JOBS=
 LOCAL_FILE=
@@ -311,7 +320,11 @@ if [[ ! $CACHE_DIR =~ ^/ ]]; then
   CACHE_DIR=$(pwd)/$CACHE_DIR
 fi
 
-DOWNLOAD_URL=$(download_url $PERL_VERSION)
+if xz --version >/dev/null 2>&1; then
+  HAS_XZ=1
+fi
+
+DOWNLOAD_URL=$(download_url $PERL_VERSION "$HAS_XZ")
 if [[ -z $DOWNLOAD_URL ]]; then
   die "Couldn't find download url for perl $PERL_VERSION"
 fi
