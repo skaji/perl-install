@@ -76,6 +76,7 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_conf_fwrapv
     _patch_utils_h2ph
     _patch_lib_h2ph
+    _patch_sdbm_file_c
 );
 
 my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
