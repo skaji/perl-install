@@ -14,7 +14,7 @@ use HTTP::Tiny;
 use Sub::Util 'subname';
 use version;
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 chdir "$FindBin::Bin/..";
 
@@ -201,7 +201,14 @@ END
 }
 
 my $SOLARIS_CONDITION = <<'END';
-# TOOD solaris condition
+myuname=$(uname -s | tr '[A-Z]' '[a-z]')
+if [[ $myuname = solaris ]]; then
+  exit 0
+elif [[ $myuname = sunos ]]; then
+  if [[ $(uname -r) =~ ^5 ]]; then
+    exit 0
+  fi
+fi
 exit 1
 END
 {
@@ -242,8 +249,7 @@ END
 }
 
 my $BITRIG_CONDITION = <<'END';
-# TODO bitrig condition
-exit 1
+[[ $(uname -s) = Bitrig ]]
 END
 {
     my $patch = <<'END';

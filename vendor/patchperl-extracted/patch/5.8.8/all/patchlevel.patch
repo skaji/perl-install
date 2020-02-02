@@ -1,4 +1,4 @@
 --- patchlevel.h.org	2019-11-22 00:38:51.000000000 +0900
 +++ patchlevel.h	2019-11-22 00:39:12.000000000 +0900
 @@ -123,0 +124 @@
-+	,"Devel::PatchPerl 1.84 (patchperl-extracted 0.0.1)"
++	,"Devel::PatchPerl 1.84 (patchperl-extracted 0.0.2)"

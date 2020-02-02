@@ -48,7 +48,7 @@ done
 
 if [ -d "$DIR"/patch/$PERL_VERSION/conditional ]; then
   for d in "$DIR"/patch/$PERL_VERSION/conditional/*; do
-    if sh "$d"/condition; then
+    if bash "$d"/condition; then
       if [ -z $PATCHPERL_QUIET ]; then
         echo "---> $PATCH_CMD -f -s -p0 < ${d##*/}/patch" >&2
       fi
