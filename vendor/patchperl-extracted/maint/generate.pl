@@ -77,6 +77,8 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_utils_h2ph
     _patch_lib_h2ph
     _patch_sdbm_file_c
+    _patch_mmaix_pm
+    _patch_time_local_t
 );
 
 my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
@@ -131,6 +133,7 @@ END
         if (!-f $file) {
             my $tag = $perl_version =~ /^5.[89]\./ ? "perl-$perl_version" : "v$perl_version";
             my $url = "https://raw.githubusercontent.com/Perl/perl5/$tag/patchlevel.h";
+            warn "Downloading $url\n";
             my $res = $http->mirror($url => $file);
             die "$res->{status} $res->{reason}, $url\n" if !$res->{success};
         }
@@ -412,5 +415,33 @@ END
         5.013000 <= $perl_version;
     };
     conditional_patch "bitrig_bitrigcx", $perl_version_check, $BITRIG_CONDITION, $patch;
+}
+
+my $AIX_CONDITION = <<'END';
+[[ $(uname -s) = AIX ]]
+END
+{
+    my $patch = <<'END';
+--- cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_AIX.pm
++++ cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_AIX.pm
+@@ -50,7 +50,9 @@ sub xs_dlsyms_ext {
+ 
+ sub xs_dlsyms_arg {
+     my($self, $file) = @_;
+-    return qq{-bE:${file}};
++    my $arg = qq{-bE:${file}};
++    $arg = '-Wl,'.$arg if $Config{lddlflags} =~ /-Wl,-bE:/;
++    return $arg;
+ }
+ 
+ sub init_others {
+END
+    my $perl_version_check = sub {
+        my $perl_version = version->parse(shift);
+        return unless $perl_version > 5.027000;
+        return unless $perl_version < 5.031001;
+        1;
+    };
+    conditional_patch "mmaix_pm", $perl_version_check, $AIX_CONDITION, $patch;
 }
 
