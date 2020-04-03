@@ -390,7 +390,7 @@ run_command "$LOG_FILE" "${MAKE_CMD[@]}"
 if [[ -n $RUN_TEST ]]; then
   MAKE_CMD=("make")
   if [[ -n $JOBS ]]; then
-    MAKE_CMD=("${MAKE_CMD[@]}" "--jobs=$JOBS")
+    MAKE_CMD=("env" "TEST_JOBS=$JOBS" "${MAKE_CMD[@]}")
   fi
   MAKE_CMD=("${MAKE_CMD[@]}" "test_harness")
   run_command "$LOG_FILE" "${MAKE_CMD[@]}"
