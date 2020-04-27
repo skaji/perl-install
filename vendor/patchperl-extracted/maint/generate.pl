@@ -79,6 +79,7 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_sdbm_file_c
     _patch_mmaix_pm
     _patch_time_local_t
+    _patch_pp_c_libc
 );
 
 my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
