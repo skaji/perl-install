@@ -80,6 +80,7 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_mmaix_pm
     _patch_time_local_t
     _patch_pp_c_libc
+    _patch_conf_gcc10
 );
 
 my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
@@ -94,7 +95,7 @@ for my $perl_version (@PERL_VERSION) {
             my ($sub, @argv) = @$sub;
             my $name = subname $sub;
             if (!$KNOWN{$name}++) {
-                warn "---> found new patch: $name\n";
+                warn "\e[1;32m---> found new patch: $name\e[m\n";
             }
             $name =~ s/Devel::PatchPerl::_patch_//;
             next if grep { $name eq $_ } @skip;

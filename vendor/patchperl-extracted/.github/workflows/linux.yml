@@ -1,0 +1,39 @@
+name: linux
+
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+  pull_request:
+
+jobs:
+  perl:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        perl-version:
+          - '5.8.1'
+          - '5.8.8'
+          - '5.8.9'
+          - '5.10.1'
+          - '5.16.3'
+          - '5.30.2'
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get Perl sorce code tarball
+        run: curl -fsSLO https://www.cpan.org/src/5.0/perl-${{ matrix.perl-version }}.tar.gz
+      - name: Apply patches
+        run: |
+          tar xzf perl-${{ matrix.perl-version }}.tar.gz
+          cd perl-${{ matrix.perl-version }}
+          ../patchperl ${{ matrix.perl-version }}
+      - name: Build Perl
+        run: |
+          cd perl-${{ matrix.perl-version }}
+          ./Configure -des -Dprefix=/tmp/perl-${{ matrix.perl-version }}
+          make install
