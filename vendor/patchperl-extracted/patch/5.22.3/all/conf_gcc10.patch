@@ -1,6 +1,6 @@
 --- Configure
 +++ Configure
-@@ -4657,7 +4657,7 @@ else
+@@ -4703,7 +4703,7 @@ else
  fi
  $rm -f try try.*
  case "$gccversion" in
@@ -9,7 +9,7 @@
  esac
  case "$gccversion" in
  '') gccosandvers='' ;;
-@@ -4697,7 +4697,7 @@ esac
+@@ -4743,7 +4743,7 @@ esac
  # gcc 3.* complain about adding -Idirectories that they already know about,
  # so we will take those off from locincpth.
  case "$gccversion" in
@@ -18,7 +18,7 @@
      echo "main(){}">try.c
      for incdir in $locincpth; do
         warn=`$cc $ccflags -I$incdir -c try.c 2>&1 | \
-@@ -5409,13 +5409,13 @@ fi
+@@ -5469,13 +5469,13 @@ fi
  case "$hint" in
  default|recommended)
  	case "$gccversion" in
@@ -34,7 +34,7 @@
  			$contains _POSIX_VERSION $usrinc/sys/unistd.h >/dev/null 2>&1
  		then
  			# Interactive Systems (ISC) POSIX mode.
-@@ -5424,7 +5424,7 @@ default|recommended)
+@@ -5484,7 +5484,7 @@ default|recommended)
  		;;
  	esac
  	case "$gccversion" in
@@ -43,8 +43,8 @@
  	2.[0-8]*) ;;
  	?*)	set strict-aliasing -fno-strict-aliasing
  		eval $checkccflag
-@@ -5533,7 +5533,7 @@ case "$cppflags" in
- *)  cppflags="$cppflags $ccflags" ;;
+@@ -5602,7 +5602,7 @@ case "$cppflags" in
+     ;;
  esac
  case "$gccversion" in
 -1*) cppflags="$cppflags -D__GNUC__"
@@ -52,11 +52,11 @@
  esac
  case "$mips_type" in
  '');;
-@@ -22961,7 +22961,7 @@ fi
+@@ -23612,7 +23612,7 @@ fi
  
  : add -D_FORTIFY_SOURCE if feasible and not already there
  case "$gccversion" in
--4.*)	case "$optimize$ccflags" in
+-[45].*)	case "$optimize$ccflags" in
 +[456789].*|[1-9][0-9]*)	case "$optimize$ccflags" in
  	*-O*)	case "$ccflags$cppsymbols" in
  		*_FORTIFY_SOURCE=*) # Don't add it again.
