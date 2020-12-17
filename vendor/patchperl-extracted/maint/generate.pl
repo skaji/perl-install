@@ -9,7 +9,7 @@ use Devel::PatchPerl::Hints ();
 
 use CPAN::Perl::Releases;
 use File::Path 'make_path';
-use File::Slurper 'write_binary';
+use File::Slurper qw(write_binary read_binary);
 use HTTP::Tiny;
 use Sub::Util 'subname';
 use version;
@@ -81,6 +81,7 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_time_local_t
     _patch_pp_c_libc
     _patch_conf_gcc10
+    _patch_useshrplib
 );
 
 my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
@@ -180,23 +181,8 @@ sub conditional_patch {
 }
 
 {
-    my $condition = <<'END';
-[ $(uname) = Linux ] && [ ! -f /usr/include/asm/page.h ]
-END
-    my $patch = <<'END';
---- ext/IPC/SysV/SysV.xs.org  2007-08-11 00:12:46.000000000 +0200
-+++ ext/IPC/SysV/SysV.xs  2007-08-11 00:10:51.000000000 +0200
-@@ -3,9 +3,6 @@
- #include "XSUB.h"
- 
- #include <sys/types.h>
--#ifdef __linux__
--#   include <asm/page.h>
--#endif
- #if defined(HAS_MSG) || defined(HAS_SEM) || defined(HAS_SHM)
- #ifndef HAS_SEM
- #   include <sys/ipc.h>
-END
+    my $condition = read_binary 'maint/patch/condition.sysv';
+    my $patch = read_binary 'maint/patch/sysv.patch';
     my $perl_version_check = sub {
         my $perl_version = shift;
         my @perl = (qr/^5\.8\.[0-8]$/, qr/^5\.9\.[0-5]$/);
@@ -205,46 +191,9 @@ END
     conditional_patch "sysv", $perl_version_check, $condition, $patch;
 }
 
-my $SOLARIS_CONDITION = <<'END';
-myuname=$(uname -s | tr '[A-Z]' '[a-z]')
-if [[ $myuname = solaris ]]; then
-  exit 0
-elif [[ $myuname = sunos ]]; then
-  if [[ $(uname -r) =~ ^5 ]]; then
-    exit 0
-  fi
-fi
-exit 1
-END
+my $SOLARIS_CONDITION = read_binary 'maint/patch/condition.solaris';
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index ff511d3..30ab78a 100755
---- Configure
-+++ Configure
-@@ -8048,7 +8048,20 @@ EOM
- 			      ;;
- 			linux|irix*|gnu*)  dflt="-shared $optimize" ;;
- 			next)  dflt='none' ;;
--			solaris) dflt='-G' ;;
-+			solaris) # See [perl #66604].  On Solaris 11, gcc -m64 on amd64
-+				# appears not to understand -G.  gcc versions at
-+				# least as old as 3.4.3 support -shared, so just
-+				# use that with Solaris 11 and later, but keep
-+				# the old behavior for older Solaris versions.
-+				case "$gccversion" in
-+					'') dflt='-G' ;;
-+					*)	case "$osvers" in
-+							2.?|2.10) dflt='-G' ;;
-+							*) dflt='-shared' ;;
-+						esac
-+						;;
-+				esac
-+				;;
- 			sunos) dflt='-assert nodefinitions' ;;
- 			svr4*|esix*|nonstopux) dflt="-G $ldflags" ;;
- 	        *)     dflt='none' ;;
-END
+    my $patch = read_binary 'maint/patch/conf_solaris.patch';
     my $perl_version_check = sub {
         my $perl_version = shift;
         return version->parse($perl_version) < 5.018000;
@@ -253,26 +202,9 @@ END
     conditional_patch "conf_solaris", $perl_version_check, $SOLARIS_CONDITION, $patch;
 }
 
-my $BITRIG_CONDITION = <<'END';
-[[ $(uname -s) = Bitrig ]]
-END
+my $BITRIG_CONDITION = read_binary 'maint/patch/condition.bitrig';
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index 19bed50..e4e4075 100755
---- Configure
-+++ Configure
-@@ -3312,6 +3312,9 @@ EOM
- 			;;
- 		next*) osname=next ;;
- 		nonstop-ux) osname=nonstopux ;;
-+		bitrig) osname=bitrig
-+			osvers="$3"
-+			;;
- 		openbsd) osname=openbsd
-                 	osvers="$3"
-                 	;;
-END
+    my $patch = read_binary 'maint/patch/bitrig_boogle.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -281,21 +213,7 @@ END
     conditional_patch "bitrig_boogle", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Makefile.SH b/Makefile.SH
-index 17298fa..ecaa8ac 100755
---- Makefile.SH
-+++ Makefile.SH
-@@ -77,7 +77,7 @@ true)
- 	sunos*)
- 		linklibperl="-lperl"
- 		;;
--	netbsd*|freebsd[234]*|openbsd*)
-+	netbsd*|freebsd[234]*|openbsd*|bitrig*)
- 		linklibperl="-L. -lperl"
- 		;;
- 	interix*)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigm1.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -304,21 +222,7 @@ END
     conditional_patch "bitrig_bitrigm1", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Makefile.SH b/Makefile.SH
-index 17298fa..ecaa8ac 100755
---- Makefile.SH
-+++ Makefile.SH
-@@ -77,7 +77,7 @@ true)
- 	sunos*)
- 		linklibperl="-lperl"
- 		;;
--	netbsd*|freebsd[234]*|openbsd*|dragonfly*)
-+	netbsd*|freebsd[234]*|openbsd*|dragonfly*|bitrig*)
- 		linklibperl="-L. -lperl"
- 		;;
- 	interix*)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigmx.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -327,21 +231,7 @@ END
     conditional_patch "bitrig_bitrigmx", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index 19bed50..e4e4075 100755
---- Configure	Thu Aug 22 23:20:14 2013
-+++ Configure	Thu Aug 22 23:20:35 2013
-@@ -7855,7 +7855,7 @@
- 	solaris)
- 		xxx="-R $shrpdir"
- 		;;
--	freebsd|netbsd|openbsd)
-+	freebsd|netbsd|openbsd|bitrig)
- 		xxx="-Wl,-R$shrpdir"
- 		;;
- 	bsdos|linux|irix*|dec_osf)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigc3.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -350,21 +240,7 @@ END
     conditional_patch "bitrig_bitrigc3", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index 19bed50..e4e4075 100755
---- Configure	Thu Aug 22 22:56:04 2013
-+++ Configure	Thu Aug 22 22:56:25 2013
-@@ -7892,7 +7892,7 @@
- 	solaris)
- 		xxx="-R $shrpdir"
- 		;;
--	freebsd|netbsd|openbsd|interix)
-+	freebsd|netbsd|openbsd|interix|bitrig)
- 		xxx="-Wl,-R$shrpdir"
- 		;;
- 	bsdos|linux|irix*|dec_osf|gnu*)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigc2.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -373,21 +249,7 @@ END
     conditional_patch "bitrig_bitrigc2", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index 19bed50..e4e4075 100755
---- Configure
-+++ Configure
-@@ -8328,7 +8331,7 @@ if "$useshrplib"; then
- 	solaris)
- 		xxx="-R $shrpdir"
- 		;;
--	freebsd|netbsd|openbsd|interix|dragonfly)
-+	freebsd|netbsd|openbsd|interix|dragonfly|bitrig)
- 		xxx="-Wl,-R$shrpdir"
- 		;;
- 	bsdos|linux|irix*|dec_osf|gnu*)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigc1.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -396,21 +258,7 @@ END
     conditional_patch "bitrig_bitrigc1", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 {
-    my $patch = <<'END';
-diff --git a/Configure b/Configure
-index 19bed50..e4e4075 100755
---- Configure
-+++ Configure
-@@ -8328,7 +8331,7 @@ if "$useshrplib"; then
- 	solaris)
- 		xxx="-R $shrpdir"
- 		;;
--	freebsd|mirbsd|netbsd|openbsd|interix|dragonfly)
-+	freebsd|mirbsd|netbsd|openbsd|interix|dragonfly|bitrig)
- 		xxx="-Wl,-R$shrpdir"
- 		;;
- 	bsdos|linux|irix*|dec_osf|gnu*)
-END
+    my $patch = read_binary 'maint/patch/bitrig_bitrigcx.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return if $perl_version >= 5.019004;
@@ -419,25 +267,9 @@ END
     conditional_patch "bitrig_bitrigcx", $perl_version_check, $BITRIG_CONDITION, $patch;
 }
 
-my $AIX_CONDITION = <<'END';
-[[ $(uname -s) = AIX ]]
-END
+my $AIX_CONDITION = read_binary 'maint/patch/condition.aix';
 {
-    my $patch = <<'END';
---- cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_AIX.pm
-+++ cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_AIX.pm
-@@ -50,7 +50,9 @@ sub xs_dlsyms_ext {
- 
- sub xs_dlsyms_arg {
-     my($self, $file) = @_;
--    return qq{-bE:${file}};
-+    my $arg = qq{-bE:${file}};
-+    $arg = '-Wl,'.$arg if $Config{lddlflags} =~ /-Wl,-bE:/;
-+    return $arg;
- }
- 
- sub init_others {
-END
+    my $patch = read_binary 'maint/patch/mmaix_pm.patch';
     my $perl_version_check = sub {
         my $perl_version = version->parse(shift);
         return unless $perl_version > 5.027000;

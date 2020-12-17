@@ -1,0 +1,19 @@
+--- makedepend.SH	2020-06-09 16:14:54.767612690 +0100
++++ makedepend.SH	2020-06-09 16:15:04.411082685 +0100
+@@ -128,7 +128,7 @@
+     *.y) filebase=`basename $file .y` ;;
+     esac
+     case "$file" in
+-    */*) finc="-I`echo $file | sed 's#/[^/]*$##`" ;;
++    */*) finc="-I`echo $file | sed 's#/[^/]*$##'`" ;;
+     *)   finc= ;;
+     esac
+     $echo "Finding dependencies for $filebase$_o."
+@@ -169,6 +169,7 @@
+             -e '/^#.*<command line>/d' \
+             -e '/^#.*<command-line>/d' \
+ 	    -e '/^#.*"-"/d' \
++	    -e '/^#.*"\/.*\/"/d' \
+ 	    -e '/: file path prefix .* never used$/d' \
+ 	    -e 's#\.[0-9][0-9]*\.c#'"$file.c#" \
+ 	    -e 's/^[	 ]*#[	 ]*line/#/' \

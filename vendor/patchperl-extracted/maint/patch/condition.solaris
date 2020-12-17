@@ -1,0 +1,9 @@
+myuname=$(uname -s | tr '[A-Z]' '[a-z]')
+if [[ $myuname = solaris ]]; then
+  exit 0
+elif [[ $myuname = sunos ]]; then
+  if [[ $(uname -r) =~ ^5 ]]; then
+    exit 0
+  fi
+fi
+exit 1
