@@ -398,4 +398,14 @@ fi
 
 run_command "$LOG_FILE" make install
 
+if [[ ! -e $PREFIX/bin/perl ]]; then
+  (
+    cd "$PREFIX/bin"
+    for src in *$PERL_VERSION; do
+      target=${src%$PERL_VERSION}
+      ln -s $src $target
+    done
+  )
+fi
+
 info "Successfully installed perl $PERL_VERSION"
