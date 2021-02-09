@@ -82,9 +82,15 @@ my %KNOWN = map { ("Devel::PatchPerl::$_", 1) } qw(
     _patch_pp_c_libc
     _patch_conf_gcc10
     _patch_useshrplib
+    _patch_dynaloader_mac
+    _patch_eumm_darwin
 );
 
-my @skip = qw(develpatchperlversion sysv patchlevel hints bitrig conf_solaris);
+my @skip = qw(
+    develpatchperlversion sysv patchlevel hints bitrig conf_solaris
+    dynaloader_mac
+    eumm_darwin
+);
 
 for my $perl_version (@PERL_VERSION) {
     make_path "patch/$perl_version/all" if !-d "$perl_version/all";
@@ -144,7 +150,7 @@ END
         my $i;
         my $seen;
         while (<$fh>) {
-            if (/\t,NULL/ and $seen) {
+            if (/^\s+,NULL/ and $seen) {
                 $i = $fh->input_line_number;
                 last;
             }
@@ -279,3 +285,31 @@ my $AIX_CONDITION = read_binary 'maint/patch/condition.aix';
     conditional_patch "mmaix_pm", $perl_version_check, $AIX_CONDITION, $patch;
 }
 
+my $DARWIN_CONDITION = read_binary 'maint/patch/condition.darwin';
+{
+    my $patch = read_binary 'maint/patch/dynaloader_mac.patch';
+    my $perl_version_check = sub {
+        my $perl_version = version->parse(shift);
+        return if ($perl_version > 5.032000 && $perl_version < 5.033000 ) or $perl_version > 5.033005; # Reevaluate if v5.30.4 appears
+        1;
+    };
+    conditional_patch "dynaloader_mac", $perl_version_check, $DARWIN_CONDITION, $patch;
+}
+
+for my $versions (
+    ["5.8.1", "5.11.0"],
+    ["5.11.0", "5.13.5"],
+    ["5.13.5", "5.15.1"],
+    ["5.15.1", undef],
+) {
+    my $lower_version = $versions->[0];
+    my $upper_version = $versions->[1];
+    my $patch = read_binary "maint/patch/eumm_darwin_$lower_version.patch";
+    my $perl_version_check = sub {
+        my $perl_version = version->parse(shift);
+        return if ($perl_version > 5.032000 && $perl_version < 5.033000 ) or $perl_version > 5.033005; # Reevaluate if v5.30.4 appears
+        version->parse($lower_version) <= $perl_version
+            and ($upper_version ? $perl_version < version->parse($upper_version) : 1);
+    };
+    conditional_patch "eumm_darwin", $perl_version_check, $DARWIN_CONDITION, $patch;
+}

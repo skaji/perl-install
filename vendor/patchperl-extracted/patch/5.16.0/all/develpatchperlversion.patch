@@ -6,7 +6,7 @@ index e12c8bb..1a8088f 100755
  zip='$zip'
  EOT
  
-+echo "BuiltWithPatchPerl='2.04'" >>config.sh
++echo "BuiltWithPatchPerl='2.08'" >>config.sh
 +
  : add special variables
  $test -f $src/patchlevel.h && 
