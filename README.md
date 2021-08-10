@@ -16,8 +16,8 @@ perl-install also provides [plenv](https://github.com/tokuhirom/plenv) `install`
 git clone https://github.com/skaji/perl-install
 
 # If you don't have git, but wget/tar, then
-wget -o perl-install-master.tar.gz https://github.com/skaji/perl-install/archive/master.tar.gz
-tar xf perl-install-master.tar.gz
+wget -o perl-install-main.tar.gz https://github.com/skaji/perl-install/archive/main.tar.gz
+tar xf perl-install-main.tar.gz
 ```
 
 If you want to use perl-install as a [plenv](https://github.com/tokuhirom/plenv) plugin, then change the target directory:

@@ -78,7 +78,7 @@ has_wget() {
 }
 
 list_perl_releases() {
-  local url=https://raw.githubusercontent.com/skaji/perl-releases/master/perl-releases.v1.csv
+  local url=https://raw.githubusercontent.com/skaji/perl-releases/main/perl-releases.v1.csv
   if has_curl; then
     curl -fsSL $url
   elif has_wget 2>&1; then
