@@ -1,0 +1,13 @@
+diff --git a/Configure b/Configure
+index e12c8bb..1a8088f 100755
+--- Configure
++++ Configure
+@@ -25151,6 +25151,8 @@ zcat='$zcat'
+ zip='$zip'
+ EOT
+ 
++echo "BuiltWithPatchPerl='2.08'" >>config.sh
++
+ : add special variables
+ $test -f $src/patchlevel.h && 
+ awk '/^#define[ 	]+PERL_/ {printf "%s=%s\n",$2,$3}' $src/patchlevel.h >>config.sh

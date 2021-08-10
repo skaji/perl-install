@@ -21,8 +21,8 @@ So I think it is useful there exist plain patch files for old perls.
 git clone https://github.com/skaji/patchperl-extracted
 
 # otherwise;
-curl -fsSL -o patchperl-extracted-master.tar.gz https://github.com/skaji/patchperl-extracted/archive/master.tar.gz
-tar xzf patchperl-extracted-master.tar.gz
+curl -fsSL -o patchperl-extracted-main.tar.gz https://github.com/skaji/patchperl-extracted/archive/main.tar.gz
+tar xzf patchperl-extracted-main.tar.gz
 ```
 
 # Usage
