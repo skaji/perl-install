@@ -175,7 +175,7 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
     -l | --list | --complete)
-      list_perl_releases | grep ,stable, | cut -d, -f3
+      list_perl_releases | grep ,latest, | cut -d, -f3
       exit
       ;;
     -L | --list-all)
