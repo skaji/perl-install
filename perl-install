@@ -12,7 +12,7 @@ Options:
   -j, --jobs       set make --jobs option
   -h, --help       show this help
       --version    show perl-install's version
-      --noman      do not generate man pages, i.e, set -Dman1dir=none and -Dman3dir=none
+      --man        generate man pages
       --nopatch    do not apply Devel::PatchPerl
       --test       run test
       --work-dir   set work directory
@@ -35,7 +35,7 @@ Options:
   -j, --jobs       set make --jobs option
   -h, --help       show this help
       --version    show perl-install's version
-      --noman      do not generate man pages, i.e, set -Dman1dir=none and -Dman3dir=none
+      --man        generate man pages
       --nopatch    do not apply Devel::PatchPerl
       --test       run test
       --as         set installation name
@@ -124,6 +124,7 @@ BUILD_DIR=
 CACHE_DIR=
 CONFIGURE_OPTIONS=()
 DOWNLOAD_URL=
+ENABLED_MAN=
 HAS_CURL=
 HAS_WGET=
 HAS_XZ=
@@ -184,8 +185,12 @@ while [[ $# -gt 0 ]]; do
       list_perl_releases | cut -d, -f3
       exit
       ;;
+    --man)
+      ENABLED_MAN=1
+      shift 1
+      ;;
     --noman | --no-man)
-      CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "-Dman1dir=none" "-Dman3dir=none")
+      # now --noman by default
       shift 1
       ;;
     --nopatch | --no-patch)
@@ -302,6 +307,10 @@ if [[ ! $PREFIX =~ ^/ ]]; then
   PREFIX=$(pwd)/$PREFIX
 fi
 CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "-Dprefix=$PREFIX" "-Dscriptdir=$PREFIX/bin")
+
+if [[ -z $ENABLED_MAN ]]; then
+  CONFIGURE_OPTIONS=("${CONFIGURE_OPTIONS[@]}" "-Dman1dir=none" "-Dman3dir=none")
+fi
 
 if [[ -z $IS_PLENV ]]; then
   if [[ -z $WORK_DIR ]]; then
