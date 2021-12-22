@@ -11,26 +11,21 @@ perl-install also provides [plenv](https://github.com/tokuhirom/plenv) `install`
 
 # Install
 
-```
-# If you have git, then
-git clone https://github.com/skaji/perl-install
-
-# If you don't have git, but wget/tar, then
-wget -o perl-install-main.tar.gz https://github.com/skaji/perl-install/archive/main.tar.gz
-tar xf perl-install-main.tar.gz
+```console
+❯ git clone https://github.com/skaji/perl-install
 ```
 
 If you want to use perl-install as a [plenv](https://github.com/tokuhirom/plenv) plugin, then change the target directory:
-```
-git clone https://github.com/skaji/perl-install $(plenv root)/plugins/perl-install
-# Now you have `plenv install` command powered by perl-install
+
+```console
+❯ git clone https://github.com/skaji/perl-install $(plenv root)/plugins/perl-install
 ```
 
 Note that if you already have perl-build in your plenv plugin directory, then remove it first.
 
 # Usage
 
-```
+```console
 ❯ perl-install --help
 Usage: perl-install [options] perl_version prefix
 
@@ -41,13 +36,14 @@ Options:
   -j, --jobs       set make --jobs option
   -h, --help       show this help
       --version    show perl-install's version
-      --noman      do not generate man pages, i.e, set -Dman1dir=none and -Dman3dir=none
+      --man        generate man pages
       --nopatch    do not apply Devel::PatchPerl
       --test       run test
       --work-dir   set work directory
 
 Examples:
   $ perl-install -l
+  $ perl-install latest ~/perl
   $ perl-install 5.30.1 ~/perl
   $ perl-install 5.30.1 ~/perl-shrplib -Duseithreads -Duseshrplib
 ```
