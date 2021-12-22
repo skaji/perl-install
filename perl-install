@@ -19,6 +19,7 @@ Options:
 
 Examples:
   $ perl-install -l
+  $ perl-install latest ~/perl
   $ perl-install 5.30.1 ~/perl
   $ perl-install 5.30.1 ~/perl-shrplib -Duseithreads -Duseshrplib
 "
@@ -41,6 +42,7 @@ Options:
 
 Examples:
   $ plenv install -l
+  $ plenv install latest
   $ plenv install 5.30.1
   $ plenv install 5.30.1 --as 5.30-shrplib -Duseithreads -Duseshrplib
 "
@@ -269,10 +271,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ -z $PERL_VERSION ]]; then
+  die "perl_version argument is required"
+fi
+
+if [[ $PERL_VERSION = latest ]]; then
+  PERL_VERSION=$(list_perl_releases | grep ,latest, | cut -d, -f3 | head -1)
+fi
+
 if [[ -n $IS_PLENV ]]; then
-  if [[ -z $PERL_VERSION ]]; then
-    die "perl_version argument is required"
-  fi
   mkdir -p "$PLENV_ROOT/versions"
   if [[ -n $AS ]]; then
     PREFIX="$PLENV_ROOT/versions/$AS"
@@ -283,8 +290,8 @@ if [[ -n $IS_PLENV ]]; then
   BUILD_DIR="$PLENV_ROOT/build/$(date +%s).$$"
 fi
 
-if [[ -z $PERL_VERSION ]] || [[ -z $PREFIX ]]; then
-  die "perl_version and prefix arguments are required"
+if [[ -z $PREFIX ]]; then
+  die "prefix argument is required"
 fi
 
 if [[ -e $PREFIX ]] && [[ -n $(ls -A $PREFIX 2>/dev/null) ]]; then
