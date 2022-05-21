@@ -417,8 +417,9 @@ run_command "$LOG_FILE" make install
 if [[ ! -e $PREFIX/bin/perl ]]; then
   (
     cd "$PREFIX/bin"
-    for src in *$PERL_VERSION; do
-      target=${src%$PERL_VERSION}
+    PERL_VERSION_ONLY=${PERL_VERSION%-*}
+    for src in *$PERL_VERSION_ONLY; do
+      target=${src%$PERL_VERSION_ONLY}
       ln -s $src $target
     done
   )
