@@ -40,6 +40,7 @@ Options:
       --nopatch    do not apply Devel::PatchPerl
       --test       run test
       --work-dir   set work directory
+      --show-log-on-failure show log on failure
 
 Examples:
   $ perl-install -l
